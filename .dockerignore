@@ -1,0 +1,53 @@
+# ==============================================================================
+# .dockerignore — Files excluded from Docker build context
+# ==============================================================================
+# Reduces build context size and prevents sensitive files from being included
+# in the Docker image. Smaller context = faster builds.
+# ==============================================================================
+
+# Dependencies (will be installed fresh in container)
+node_modules
+
+# Build output (will be rebuilt in container)
+dist
+
+# Environment files (secrets should be injected at runtime, not baked into image)
+.env
+.env.*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Documentation (not needed in production image)
+docs/
+*.md
+!README.md
+
+# Tests (not needed in production image)
+test/
+coverage/
+jest.config.ts
+
+# CI/CD
+.github/
+
+# Docker files (prevent recursive inclusion)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

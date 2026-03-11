@@ -1,0 +1,55 @@
+# ==============================================================================
+# Docker Compose — Test Environment
+# ==============================================================================
+# Starts only PostgreSQL, Redis, and RabbitMQ for isolated testing.
+# No downstream services required — the auth-service is fully self-contained.
+#
+# Uses different container names and ports to avoid conflicts with dev environment.
+#
+# Usage:
+#   docker-compose -f docker-compose.test.yml up -d   # Start test infra
+#   npm run test:e2e                                    # Run e2e tests
+#   docker-compose -f docker-compose.test.yml down -v  # Teardown (reset data)
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: auth-service-postgres-test
+    environment:
+      POSTGRES_DB: auth_db_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_test_password
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data  # Use tmpfs for faster tests (no disk persistence)
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: auth-service-redis-test
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq-test:
+    image: rabbitmq:3.13-alpine
+    container_name: auth-service-rabbitmq-test
+    ports:
+      - '5673:5672'
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_running']
+      interval: 10s
+      timeout: 5s
+      retries: 5

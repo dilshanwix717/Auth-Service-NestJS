@@ -1,0 +1,712 @@
+{
+  "info": {
+    "name": "Auth Service API",
+    "description": "Complete API collection for the Auth Service — authentication, token management, account management, roles, and health checks for the Omi video streaming platform.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "your-internal-api-key",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — register, login, logout, password reset, email change",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"SecureP@ss123\",\n  \"confirmPassword\": \"SecureP@ss123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "register"]
+            },
+            "description": "Register a new user account. Password must be at least 8 characters with uppercase, lowercase, digit, and special character."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "        pm.collectionVariables.set('userId', jsonData.data.userId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecureP@ss123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "login"]
+            },
+            "description": "Authenticate user and receive access + refresh token pair. Automatically stores tokens in collection variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"{{accessToken}}\",\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "logout"]
+            },
+            "description": "Logout — revokes the refresh token and blacklists the access token JTI in Redis."
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/validate-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "validate-token"]
+            },
+            "description": "Validate an access token. Checks JWT signature, expiry, blacklist status, and account status."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "refresh-token"]
+            },
+            "description": "Exchange a refresh token for a new access + refresh token pair. Old refresh token is revoked (rotation). Automatically updates collection variables."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{refreshToken}}\",\n  \"reason\": \"manual_revoke\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/revoke-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "revoke-token"]
+            },
+            "description": "Revoke a specific refresh token."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke All Tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/revoke-all-tokens",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "revoke-all-tokens"]
+            },
+            "description": "Revoke all refresh tokens and blacklist all active JWTs for a user."
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "forgot-password"]
+            },
+            "description": "Request a password reset. Always returns 200 regardless of whether the email exists (prevents user enumeration)."
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"NewSecureP@ss456\",\n  \"confirmPassword\": \"NewSecureP@ss456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "reset-password"]
+            },
+            "description": "Reset password using the token received via email. Revokes all existing sessions."
+          },
+          "response": []
+        },
+        {
+          "name": "Request Email Change",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"newEmail\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/request-email-change",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "request-email-change"]
+            },
+            "description": "Request an email change. Sends a confirmation token to the new email address."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Email Change",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"email-change-confirmation-token\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/confirm-email-change",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "auth", "confirm-email-change"]
+            },
+            "description": "Confirm email change using the token sent to the new email address."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tokens",
+      "description": "Token management — introspection and session management",
+      "item": [
+        {
+          "name": "Introspect Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tokens/introspect?token={{accessToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "tokens", "introspect"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}"
+                }
+              ]
+            },
+            "description": "Introspect a token to get its metadata: active status, user ID, email, roles, expiry."
+          },
+          "response": []
+        },
+        {
+          "name": "List User Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tokens/sessions/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "tokens", "sessions", "{{userId}}"]
+            },
+            "description": "List all active sessions for a user, including device fingerprints, IP addresses, and last used times."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tokens/sessions/session-id-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "tokens", "sessions", "session-id-here"]
+            },
+            "description": "Revoke a specific session by its session ID. Blacklists the associated JWT."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "Role management — assign, revoke, and query roles (admin only)",
+      "item": [
+        {
+          "name": "Assign Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"role\": \"MODERATOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/roles/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "roles", "assign"]
+            },
+            "description": "Assign a role to a user. Available roles: USER, ADMIN, MODERATOR."
+          },
+          "response": []
+        },
+        {
+          "name": "Revoke Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"role\": \"MODERATOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/roles/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "roles", "revoke"]
+            },
+            "description": "Revoke a role from a user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/roles/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "roles", "{{userId}}"]
+            },
+            "description": "Get all roles assigned to a specific user."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "roles"]
+            },
+            "description": "List all available roles in the system."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "description": "Account management — lock, unlock, ban, delete credentials (admin only)",
+      "item": [
+        {
+          "name": "Lock Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"reason\": \"Suspicious activity detected\",\n  \"durationMinutes\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/lock",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "accounts", "lock"]
+            },
+            "description": "Lock a user account. If durationMinutes is provided, the account auto-unlocks after that time. If omitted, the lock is permanent (requires manual unlock)."
+          },
+          "response": []
+        },
+        {
+          "name": "Unlock Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/unlock",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "accounts", "unlock"]
+            },
+            "description": "Unlock a previously locked account."
+          },
+          "response": []
+        },
+        {
+          "name": "Ban User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"reason\": \"Terms of service violation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/ban",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "accounts", "ban"]
+            },
+            "description": "Permanently ban a user. Revokes all tokens and sessions. Requires admin intervention to reverse."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Credentials",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Internal-API-Key",
+                "value": "{{apiKey}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "admin-user-id",
+                "description": "Admin user ID (set by API Gateway)"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/{{userId}}/credentials",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "accounts", "{{userId}}", "credentials"]
+            },
+            "description": "Delete user credentials (compensating transaction). Idempotent — safe to retry. Revokes all tokens and publishes credentials.deleted event."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Health check endpoints — no authentication required",
+      "item": [
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
+            },
+            "description": "Liveness probe — returns 200 if the process is running. Used by Kubernetes/Docker for container health."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Readiness probe — returns 200 if all dependencies (PostgreSQL, Redis, RabbitMQ) are healthy. Returns 503 if any dependency is down."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
