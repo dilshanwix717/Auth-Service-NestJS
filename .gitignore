@@ -13,6 +13,10 @@ coverage/
 .env.test
 !.env.example
 
+# Cryptographic keys
+*.pem
+*.key
+
 # IDE
 .idea/
 .vscode/
