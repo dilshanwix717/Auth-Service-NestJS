@@ -23,6 +23,7 @@ import { Request } from 'express';
 
 import { AuthService } from '../services/auth.service';
 import { TokenService } from '../services/token.service';
+import { CredentialService } from '../services/credential.service';
 
 import { RegisterDto } from '../dtos/auth/register.dto';
 import { LoginDto } from '../dtos/auth/login.dto';
@@ -43,6 +44,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly tokenService: TokenService,
+    private readonly credentialService: CredentialService,
   ) {}
 
   /**
@@ -163,7 +165,26 @@ export class AuthController {
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number; tokenType: string }> {
     const result = await this.tokenService.refreshTokens(refreshTokenDto.refreshToken);
-    return { ...result, tokenType: 'Bearer' };
+
+    // TokenService returns an empty accessToken by design — generate it here
+    // by looking up the user's current credentials (email, roles).
+    const credential = await this.credentialService.findById(result.userId);
+    if (!credential) {
+      throw new Error('User credential not found during token refresh');
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(
+      credential.id,
+      credential.email,
+      credential.roles,
+    );
+
+    return {
+      accessToken,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
+      tokenType: 'Bearer',
+    };
   }
 
   /**

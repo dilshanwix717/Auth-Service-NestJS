@@ -205,7 +205,7 @@ export class TokenService {
     rawRefreshToken: string,
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number; userId: string }> {
     const tokenHash = hashToken(rawRefreshToken);
     const existingToken = await this.refreshTokenRepository.findByTokenHash(tokenHash);
 
@@ -265,6 +265,7 @@ export class TokenService {
       accessToken: '', // Caller must generate the access token with current user claims
       refreshToken: newRawRefreshToken,
       expiresIn,
+      userId,
     };
   }
 

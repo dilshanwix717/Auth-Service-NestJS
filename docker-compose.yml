@@ -1,25 +1,50 @@
 # ==============================================================================
-# Docker Compose — Local Development Environment
+# Docker Compose — Auth Service
 # ==============================================================================
-# Starts PostgreSQL, Redis, and RabbitMQ for local development.
-# The auth-service itself runs on the host (npm run start:dev) and connects
-# to these containers via localhost.
+# PostgreSQL is auth-specific so it runs here.
+# Redis and RabbitMQ are already provided by the api-gateway stack —
+# this service joins that network instead of spinning up duplicates.
+#
+# Prerequisites: api-gateway stack must be running first.
 #
 # Usage:
-#   docker-compose up -d          # Start all services
-#   docker-compose down           # Stop all services
-#   docker-compose down -v        # Stop and remove volumes (reset data)
-#   docker-compose logs -f redis  # Follow logs for a specific service
+#   docker-compose up -d
+#   docker-compose down
+#   docker-compose down -v   # also removes postgres volume
 # ==============================================================================
 
-version: '3.8'
-
 services:
+  # ---------- Auth Service ----------
+  # auth-service:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: auth-service
+  #   ports:
+  #     - '3001:3001'
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3001
+  #     - DB_HOST=auth-service-postgres
+  #     - DB_PORT=5432
+  #     - DB_USERNAME=postgres
+  #     - DB_PASSWORD=postgres_dev_password
+  #     - DB_NAME=auth_db
+  #     - REDIS_URL=redis://redis:6379        # 'redis' = container name in api-gateway network
+  #     - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672  # same
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - auth-net
+  #     - api-gateway_gateway-net            # join api-gateway's network to reach Redis + RabbitMQ
+
   # ---------- PostgreSQL ----------
-  # Primary data store for user credentials, refresh tokens, roles, audit logs
-  postgres:
+  # Auth-specific — stores credentials, refresh tokens, roles, audit logs
+
+  auth-db:
     image: postgres:16-alpine
-    container_name: auth-service-postgres
+    container_name: auth-db
     environment:
       POSTGRES_DB: auth_db
       POSTGRES_USER: postgres
@@ -27,56 +52,20 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - auth_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-  # ---------- Redis ----------
-  # Used for JWT token blacklisting (JTI-based) and session caching
-  # TTL-based keys auto-expire when tokens would have expired
-  redis:
-    image: redis:7-alpine
-    container_name: auth-service-redis
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ---------- RabbitMQ ----------
-  # Message broker for publishing auth domain events
-  # Management UI available at http://localhost:15672 (guest/guest)
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: auth-service-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - '5672:5672'    # AMQP protocol
-      - '15672:15672'  # Management UI
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'check_running']
-      interval: 15s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+    networks:
+      - shared-net
 
 volumes:
-  postgres_data:
+  auth_db_data:
     driver: local
-  redis_data:
-    driver: local
-  rabbitmq_data:
-    driver: local
+
+networks:
+  shared-net:
+    external: true

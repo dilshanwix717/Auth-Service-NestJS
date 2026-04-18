@@ -113,8 +113,8 @@ import { CustomValidationPipe } from './pipes/validation.pipe';
         database: configService.get<string>('database.database'),
         ssl: configService.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
         entities: [UserCredential, RefreshToken, Role, AuditLog, PasswordResetToken],
-        // NEVER use synchronize in production — use migrations instead
-        synchronize: false,
+        // Use synchronize only in development — use migrations in production
+        synchronize: configService.get<string>('app.nodeEnv') === 'development',
         // Connection pool settings
         extra: {
           min: configService.get<number>('database.poolMin', 2),
@@ -228,7 +228,11 @@ export class AppModule implements NestModule {
    */
   configure(consumer: MiddlewareConsumer): void {
     consumer
-      .apply(LoggingMiddleware, ApiKeyMiddleware)
+      .apply(LoggingMiddleware)
+      .forRoutes('*');
+    consumer
+      .apply(ApiKeyMiddleware)
+      .exclude('health/(.*)', 'health')
       .forRoutes('*');
   }
 }
