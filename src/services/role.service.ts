@@ -43,6 +43,7 @@ import { EventService } from './event.service';
 import { ErrorMessages } from '../constants/error-messages.constant';
 import { logger } from '../utils/logger.util';
 import { generateTraceId } from '../utils/trace-id.util';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class RoleService {
@@ -50,6 +51,7 @@ export class RoleService {
     private readonly userCredentialRepository: UserCredentialRepository,
     private readonly roleRepository: RoleRepository,
     private readonly eventService: EventService,
+    private readonly tokenService: TokenService,
   ) {}
 
   /**
@@ -92,6 +94,8 @@ export class RoleService {
     const updatedRoles = [...user.roles, role];
     await this.userCredentialRepository.updateRoles(userId, updatedRoles);
 
+    await this.tokenService.revokeAllUserTokens(userId, 'role_changed');
+
     logger.info('Role assigned to user', { userId, role, assignedBy, traceId: trace });
 
     await this.eventService.publishRoleAssigned(userId, role, assignedBy, trace);
@@ -129,6 +133,8 @@ export class RoleService {
 
     const updatedRoles = user.roles.filter((r) => r !== role);
     await this.userCredentialRepository.updateRoles(userId, updatedRoles);
+
+    await this.tokenService.revokeAllUserTokens(userId, 'role_changed');
 
     logger.info('Role revoked from user', { userId, role, revokedBy, traceId: trace });
 

@@ -66,7 +66,13 @@
  * =============================================================================
  */
 
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { CredentialService } from './credential.service';
@@ -126,7 +132,10 @@ export class AuthService {
     const existing = await this.credentialService.findByEmail(email);
     if (existing) {
       logger.warn('Registration failed — email already exists', { email, traceId: trace });
-      throw new Error(ErrorMessages.AUTH_EMAIL_EXISTS);
+      // A duplicate email is a client error, not a server fault. Throw a 409 so the
+      // global HttpExceptionFilter returns a clean Conflict response. A plain Error
+      // would surface as a 500, which trips the API Gateway's circuit breaker.
+      throw new ConflictException(ErrorMessages.AUTH_EMAIL_EXISTS);
     }
 
     // Create credential with hashed password
@@ -239,7 +248,7 @@ export class AuthService {
       });
 
       // SECURITY: Generic error message prevents user enumeration
-      throw new Error(ErrorMessages.AUTH_INVALID_CREDENTIALS);
+      throw new UnauthorizedException(ErrorMessages.AUTH_INVALID_CREDENTIALS);
     }
 
     // Check account status
@@ -269,7 +278,7 @@ export class AuthService {
           traceId: trace,
         });
 
-        throw new Error(ErrorMessages.AUTH_ACCOUNT_LOCKED);
+        throw new ForbiddenException(ErrorMessages.AUTH_ACCOUNT_LOCKED);
       }
     }
 
@@ -290,7 +299,7 @@ export class AuthService {
         traceId: trace,
       });
 
-      throw new Error(ErrorMessages.AUTH_ACCOUNT_BANNED);
+      throw new ForbiddenException(ErrorMessages.AUTH_ACCOUNT_BANNED);
     }
 
     if (credential.status === UserStatus.DELETED) {
@@ -300,7 +309,7 @@ export class AuthService {
       });
 
       // SECURITY: Generic error message prevents user enumeration
-      throw new Error(ErrorMessages.AUTH_INVALID_CREDENTIALS);
+      throw new UnauthorizedException(ErrorMessages.AUTH_INVALID_CREDENTIALS);
     }
 
     // Verify password
@@ -370,7 +379,7 @@ export class AuthService {
       });
 
       // SECURITY: Generic error message prevents user enumeration
-      throw new Error(ErrorMessages.AUTH_INVALID_CREDENTIALS);
+      throw new UnauthorizedException(ErrorMessages.AUTH_INVALID_CREDENTIALS);
     }
 
     // === SUCCESS PATH ===
@@ -676,7 +685,7 @@ export class AuthService {
 
     if (!resetToken) {
       logger.warn('Password reset failed — token not found', { traceId: trace });
-      throw new Error(ErrorMessages.AUTH_PASSWORD_RESET_INVALID);
+      throw new BadRequestException(ErrorMessages.AUTH_PASSWORD_RESET_INVALID);
     }
 
     // Check if already used
@@ -685,7 +694,7 @@ export class AuthService {
         tokenId: resetToken.id,
         traceId: trace,
       });
-      throw new Error(ErrorMessages.AUTH_PASSWORD_RESET_USED);
+      throw new BadRequestException(ErrorMessages.AUTH_PASSWORD_RESET_USED);
     }
 
     // Check expiry
@@ -694,7 +703,7 @@ export class AuthService {
         tokenId: resetToken.id,
         traceId: trace,
       });
-      throw new Error(ErrorMessages.AUTH_PASSWORD_RESET_INVALID);
+      throw new BadRequestException(ErrorMessages.AUTH_PASSWORD_RESET_INVALID);
     }
 
     // Update password
